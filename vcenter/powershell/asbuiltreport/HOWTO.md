@@ -43,7 +43,7 @@ New-AsBuiltReport `
   -Credential $cred `
   -Format Html,Word `
   -OutputFolderPath "$HOME/AsBuiltReports" `
-  -StyleFilePath "$HOME/AsBuiltReports/e360.Style.ps1" `   # e360 branding (see note)
+  -StyleFilePath "$HOME/AsBuiltReports/<Company>.Style.ps1" `   # optional company branding (see note)
   -EnableHealthCheck -Verbose
 ```
 
@@ -52,9 +52,9 @@ Replace `vcenter.example.com` with your vCenter FQDN/IP.
 ## Notes
 
 - Works fully on macOS — PowerCLI and the vSphere report module are cross-platform.
-- **e360 logo / branding:** the `-StyleFilePath` points to a custom style script
-  (`e360.Style.ps1`) that embeds the company logo on the cover page. That script
+- **Company logo / branding:** the `-StyleFilePath` points to a custom style script
+  (`<Company>.Style.ps1`) that embeds the company logo on the cover page. That script
   is pending the logo template. The cover-image embed depends on `System.Drawing`,
   which is Windows-only — so the *logo* renders reliably only when the report is
   generated on Windows; on macOS the report still builds, minus the cover image.
-- Remove the `-StyleFilePath` line until `e360.Style.ps1` exists.
+- Remove the `-StyleFilePath` line until `<Company>.Style.ps1` exists.
