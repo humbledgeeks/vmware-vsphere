@@ -37,3 +37,7 @@ outside the repository.
 
 Consolidated from previous local automation repositories during the 2026 LabOps repository
 cleanup. This repository starts with a fresh history; earlier history is retained locally only.
+
+## License
+
+This repository is licensed under the MIT License. See [LICENSE](LICENSE).
