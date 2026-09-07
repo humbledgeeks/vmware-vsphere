@@ -39,7 +39,7 @@ New-AsBuiltConfig      # note the JSON path it prints; reuse it with -AsBuiltCon
 $cred = Get-Credential
 New-AsBuiltReport `
   -Report VMware.vSphere `
-  -Target vcenter.e360.local `
+  -Target vcenter.example.com `
   -Credential $cred `
   -Format Html,Word `
   -OutputFolderPath "$HOME/AsBuiltReports" `
@@ -47,7 +47,7 @@ New-AsBuiltReport `
   -EnableHealthCheck -Verbose
 ```
 
-Replace `vcenter.e360.local` with your vCenter FQDN/IP.
+Replace `vcenter.example.com` with your vCenter FQDN/IP.
 
 ## Notes
 
