@@ -1,0 +1,17 @@
+---
+# Vault template for nsx-gather-segments.yml.
+#
+# The playbook references vault_nsx_manager, vault_nsx_username, and
+# vault_nsx_password. Create the real, ENCRYPTED vault beside this file
+# before running the playbook:
+#
+#   ansible-vault create group_vars/all/vault.yml
+#
+# then run with:  ansible-playbook nsx-gather-segments.yml --ask-vault-pass
+#
+# Do NOT commit an unencrypted vault.yml. Copy this file, rename it, fill it in
+# via ansible-vault — never by hand-editing a plaintext copy.
+
+vault_nsx_manager: "nsx-mgr.lab.local"
+vault_nsx_username: "CHANGEME"
+vault_nsx_password: "CHANGEME"

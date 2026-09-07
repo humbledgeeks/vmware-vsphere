@@ -1,0 +1,73 @@
+---
+# =============================================================================
+# Playbook : vcenter-gather-inventory.yml
+# Description : Connects to vCenter Server and gathers a read-only summary of
+#               clusters, ESXi hosts, and virtual machines using the
+#               community.vmware collection.
+#               Read-only — no changes made to the environment.
+# Author  : humbledgeeks-allen
+# Date    : 2026-03-16
+# Version : 1.0
+# Collection : community.vmware
+# Repo    : vmware-vcenter-ansible
+# Usage   : ansible-playbook vcenter-gather-inventory.yml --ask-vault-pass
+# =============================================================================
+
+- name: vCenter - Gather Inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vcenter_hostname: "{{ vault_vcenter_hostname }}"
+    vcenter_username: "{{ vault_vcenter_username }}"
+    vcenter_password: "{{ vault_vcenter_password }}"
+    vcenter_validate_certs: false   # Set true with valid certs in production
+
+  tasks:
+
+    - name: Gather vCenter cluster facts
+      community.vmware.vmware_cluster_info:
+        hostname:       "{{ vcenter_hostname }}"
+        username:       "{{ vcenter_username }}"
+        password:       "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+      register: cluster_info
+
+    - name: Display cluster summary
+      debug:
+        msg: "Cluster: {{ item.key }} | Hosts: {{ item.value.hosts | length }}"
+      loop: "{{ cluster_info.clusters | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Display ESXi host summary per cluster
+      debug:
+        msg: "Cluster: {{ item.0.key }} | Host: {{ item.1.name | default(item.1) }}"
+      loop: "{{ cluster_info.clusters | dict2items | subelements('value.hosts', skip_missing=True) }}"
+      loop_control:
+        label: "{{ item.1.name | default(item.1) }}"
+
+    - name: Gather virtual machine facts
+      community.vmware.vmware_vm_info:
+        hostname:       "{{ vcenter_hostname }}"
+        username:       "{{ vcenter_username }}"
+        password:       "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+        vm_type: vm
+      register: vm_facts
+
+    - name: Display VM count and power state summary
+      debug:
+        msg: >-
+          Total VMs: {{ vm_facts.virtual_machines | length }} |
+          Powered On: {{ vm_facts.virtual_machines | selectattr('power_state', 'equalto', 'poweredOn') | list | length }} |
+          Powered Off: {{ vm_facts.virtual_machines | selectattr('power_state', 'equalto', 'poweredOff') | list | length }}
+
+    - name: Validate - confirm inventory was returned
+      assert:
+        that:
+          - cluster_info.clusters is defined
+          - vm_facts.virtual_machines is defined
+        success_msg: "vCenter inventory gathered from {{ vcenter_hostname }} — {{ vm_facts.virtual_machines | length }} VMs found"
+        fail_msg: "Failed to gather inventory from {{ vcenter_hostname }} — check credentials and connectivity"

@@ -1,0 +1,22 @@
+{
+  "Report": {
+    "Author": "HumbledGeeks / Allen Johnson"
+  },
+  "Company": {
+    "FullName": "HumbledGeeks",
+    "ShortName": "HG",
+    "Contact": "Allen Johnson",
+    "Email": "",
+    "Phone": "",
+    "Address": ""
+  },
+  "Email": {
+    "Server": "",
+    "Port": 587,
+    "UseSSL": true,
+    "Credentials": false,
+    "From": "",
+    "To": [],
+    "Body": "VMware vSphere As Built Report"
+  }
+}

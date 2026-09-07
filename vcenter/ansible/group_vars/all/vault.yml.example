@@ -1,0 +1,17 @@
+---
+# Vault template for vcenter-gather-inventory.yml.
+#
+# The playbook references vault_vcenter_hostname, vault_vcenter_username, and
+# vault_vcenter_password. Create the real, ENCRYPTED vault beside this file
+# before running the playbook:
+#
+#   ansible-vault create group_vars/all/vault.yml
+#
+# then run with:  ansible-playbook vcenter-gather-inventory.yml --ask-vault-pass
+#
+# Do NOT commit an unencrypted vault.yml. Copy this file, rename it, fill it in
+# via ansible-vault — never by hand-editing a plaintext copy.
+
+vault_vcenter_hostname: "vcenter.lab.local"
+vault_vcenter_username: "administrator@vsphere.local"
+vault_vcenter_password: "CHANGEME"

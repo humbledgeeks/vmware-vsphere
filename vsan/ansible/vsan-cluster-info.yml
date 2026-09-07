@@ -1,0 +1,86 @@
+---
+# =============================================================================
+# Playbook : vsan-cluster-info.yml
+# Description : Connects to vCenter and gathers vSAN cluster configuration
+#               and datastore capacity information using the community.vmware
+#               collection. Read-only — no changes made to the environment.
+# Author  : humbledgeeks-allen
+# Date    : 2026-03-16
+# Version : 1.0
+# Collection : community.vmware
+# Repo    : vmware-vsan-ansible
+# Usage   : ansible-playbook vsan-cluster-info.yml --ask-vault-pass
+# =============================================================================
+
+- name: vSAN - Gather Cluster Info
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vcenter_hostname:      "{{ vault_vcenter_hostname }}"
+    vcenter_username:      "{{ vault_vcenter_username }}"
+    vcenter_password:      "{{ vault_vcenter_password }}"
+    vcenter_validate_certs: false   # Set true with valid certs in production
+
+  tasks:
+
+    - name: Gather cluster info from vCenter
+      community.vmware.vmware_cluster_info:
+        hostname:       "{{ vcenter_hostname }}"
+        username:       "{{ vcenter_username }}"
+        password:       "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+      register: cluster_info
+
+    - name: Gather vSAN health per vSAN-enabled cluster
+      community.vmware.vmware_vsan_health_info:
+        hostname:       "{{ vcenter_hostname }}"
+        username:       "{{ vcenter_username }}"
+        password:       "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+        cluster_name:   "{{ item.key }}"
+      loop: "{{ cluster_info.clusters | dict2items | selectattr('value.enabled_vsan', 'equalto', true) | list }}"
+      loop_control:
+        label: "{{ item.key }}"
+      register: vsan_health
+
+    - name: Display vSAN cluster summary
+      debug:
+        msg: >-
+          Cluster: {{ item.item.key }}
+          | vSAN Enabled: true
+          | Health: {{ item.vsan_health_info.overall_health | default('N/A') }}
+      loop: "{{ vsan_health.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+
+    - name: Gather vSAN datastore capacity
+      community.vmware.vmware_datastore_info:
+        hostname:       "{{ vcenter_hostname }}"
+        username:       "{{ vcenter_username }}"
+        password:       "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+        gather_nfs_mount_info: false
+        gather_vmfs_mount_info: false
+      register: datastore_info
+
+    - name: Filter and display vSAN datastores
+      debug:
+        msg: >-
+          Datastore: {{ item.name }}
+          | Capacity: {{ (item.capacity / 1073741824) | round(1) }} GB
+          | Free: {{ (item.freeSpace / 1073741824) | round(1) }} GB
+          | Type: {{ item.type }}
+      loop: "{{ datastore_info.datastores | selectattr('type', 'equalto', 'vsan') | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: datastore_info.datastores is defined
+
+    - name: Validate - confirm vSAN data was returned
+      assert:
+        that:
+          - cluster_info.clusters is defined
+          - datastore_info.datastores is defined
+        success_msg: "vSAN cluster info gathered successfully from {{ vcenter_hostname }}"
+        fail_msg: "Failed to gather vSAN data — check vCenter connectivity and credentials"

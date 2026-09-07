@@ -1,0 +1,71 @@
+---
+# =============================================================================
+# Playbook : nsx-gather-segments.yml
+# Description : Authenticates to the NSX-T Manager Policy API and gathers a
+#               summary of all segments and Tier-1 gateways.
+#               Read-only — no changes made to the environment.
+# Author  : humbledgeeks-allen
+# Date    : 2026-03-16
+# Version : 1.0
+# API     : NSX-T Policy API v1 (uri module)
+# Repo    : vmware-nsx-ansible
+# Usage   : ansible-playbook nsx-gather-segments.yml --ask-vault-pass
+# =============================================================================
+
+- name: NSX-T - Gather Segment Inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    nsx_manager:  "{{ vault_nsx_manager }}"
+    nsx_username: "{{ vault_nsx_username }}"
+    nsx_password: "{{ vault_nsx_password }}"
+    nsx_api_base: "https://{{ nsx_manager }}/policy/api/v1"
+
+  tasks:
+
+    - name: Gather all NSX-T segments
+      uri:
+        url: "{{ nsx_api_base }}/infra/segments"
+        method: GET
+        url_username: "{{ nsx_username }}"
+        url_password: "{{ nsx_password }}"
+        force_basic_auth: true
+        validate_certs: false   # Set true with valid certs in production
+        return_content: true
+        status_code: 200
+      register: nsx_segments
+      no_log: false   # Segments are not sensitive — set true only for auth tasks
+
+    - name: Display segment summary
+      debug:
+        msg: "Segment: {{ item.display_name }} | Type: {{ item.type | default('N/A') }} | State: {{ item.admin_state | default('N/A') }}"
+      loop: "{{ nsx_segments.json.results }}"
+      loop_control:
+        label: "{{ item.display_name }}"
+
+    - name: Gather Tier-1 gateways
+      uri:
+        url: "{{ nsx_api_base }}/infra/tier-1s"
+        method: GET
+        url_username: "{{ nsx_username }}"
+        url_password: "{{ nsx_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        status_code: 200
+      register: nsx_tier1s
+
+    - name: Display Tier-1 summary
+      debug:
+        msg: "T1 Gateway: {{ item.display_name }} | HA Mode: {{ item.ha_mode | default('N/A') }}"
+      loop: "{{ nsx_tier1s.json.results }}"
+      loop_control:
+        label: "{{ item.display_name }}"
+
+    - name: Validate - confirm segments were returned
+      assert:
+        that:
+          - nsx_segments.json.results is defined
+        success_msg: "NSX-T inventory gathered: {{ nsx_segments.json.result_count }} segments found"
+        fail_msg: "No segments returned from {{ nsx_manager }}"
